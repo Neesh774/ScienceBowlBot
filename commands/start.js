@@ -14,7 +14,7 @@ module.exports = {
 			channelId: interaction.channel.id
 		});
 		if (game) {
-			interaction.channel.send("✋ **|** There is already a game in this channel!");
+			interaction.editReply("✋ **|** There is already a game in this channel!");
 			return;
 		}
         
@@ -114,6 +114,7 @@ module.exports = {
 
 				const game = new BowlGame({
 					channelId: interaction.channel.id,
+					creatorId: interaction.user.id,
 					teamA: teamA,
 					teamB: teamB,
 					teamAScore: 0,
@@ -125,11 +126,12 @@ module.exports = {
 				await game.save();
 
 				embed.setTitle("🏆 **|** Game has started!");
-				buttonA.disabled = true;
-				buttonB.disabled = true;
-				buttonCancel.disabled = true;
-				buttonComplete.disabled = true;
+				buttonA.setDisabled();
+				buttonB.setDisabled();
+				buttonCancel.setDisabled();
+				buttonComplete.setDisabled();
                 
+				i.reply({ content: "Game has started!", ephemeral: true });
 				return await i.message.edit({ embeds: [embed], components: [row] });
 			}
 		});

@@ -2,6 +2,7 @@ const { Schema, model } = require("mongoose");
 
 const BowlGame = new Schema({
 	channelId: String,
+	creatorId: String,
 	teamA: [String],
 	teamB: [String],
 	teamAScore: Number,
