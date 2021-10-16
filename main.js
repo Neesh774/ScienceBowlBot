@@ -1,5 +1,6 @@
 const { Client, Collection, Intents } = require("discord.js");
 const fs = require("fs");
+const mongoose = require("mongoose");
 
 const config = require("./config.json");
 
@@ -30,5 +31,16 @@ for (const file of eventFiles) {
 		client.on(event.name, (...args) => event.execute(...args, client));
 	}
 }
+
+// eslint-disable-next-line no-undef
+process.on("SIGINT", async () => {
+	mongoose.connection.close(() => {
+		console.log("Closed mongoDB connection");
+		client.destroy();
+		console.log("Destroyed client");
+		// eslint-disable-next-line no-undef
+		process.exit(0);
+	});
+});
 
 client.login(config.token);
