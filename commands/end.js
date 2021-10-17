@@ -1,7 +1,8 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { MessageEmbed } = require("discord.js");
 const BowlGame = require("../schemas/BowlGame");
-const { moderators, admins } = require("../config.json");
+const { endDisplayTeam } = require("../util/displayTeam");
+
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName("end")
@@ -14,24 +15,28 @@ module.exports = {
 			channelId: interaction.channel.id
 		});
 		if (!game) {
-			interaction.channel.send("✋ **|** There is no game in this channel.");
+			interaction.editReply({ content: "✋ **|** There is no game in this channel.", ephemeral: true});
 			return;
-		}
-		if(!interaction.member.roles.cache.has(admins) && !interaction.member.roles.cache.has(moderators) && interaction.user.id !== game.creatorId) {
-			return interaction.editReply("✋ **|** You do not have permissions for this!");
 		}
 		let winner = game.teamAScore > game.teamBScore ? "Team A" : "Team B";
 		if(game.teamAScore === game.teamBScore) winner = "Tie";
 
+		console.log(game.teamA);
+		console.log(game.teamB);
 		const embed = new MessageEmbed()
 			.setColor("#42f5aa")
 			.setTitle("Game Ended")
 			.setDescription(`The game has ended. ${winner === "Tie" ? `There was a tie, and both teams had a score of ${game.teamAScore}` : `The winner was ${winner} with a score of ${game.teamAScore}`}`)
-			.addField(":regional_indicator_a: Team A", (game.teamA.length > 0) ? game.teamA.toString() : "No players", true)
-			.addField(":regional_indicator_b: Team B", (game.teamB.length > 0) ? game.teamB.toString() : "No players", true)
+			.addField(`:regional_indicator_a:: ${game.teamAScore}`, endDisplayTeam(game.teamA, interaction.guild), true)
+			.addField(`:regional_indicator_b:: ${game.teamBScore}`, endDisplayTeam(game.teamB, interaction.guild), true)
 			.setFooter(`Ended on round ${game.round}`);
 
+		game.threads.forEach(async threadId => {
+			const thread = await interaction.channel.threads.fetch(threadId).catch(() => {null;});
+			thread.setArchived(true).catch(() => {null;});
+		});
 		await game.delete();
+		interaction.editReply({ content: "Ended the game!", ephemeral: true });
 		return interaction.channel.send({ embeds: [embed] });
 	},
 };

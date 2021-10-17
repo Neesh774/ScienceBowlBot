@@ -1,12 +1,25 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { MessageEmbed, MessageActionRow, MessageButton } = require("discord.js");
+const { MessageEmbed, MessageActionRow, MessageButton, Collection } = require("discord.js");
 const BowlGame = require("../schemas/BowlGame");
 const { moderators, admins } = require("../config.json");
+const { displayTeam } = require("../util/displayTeam");
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName("start")
 		.setDescription(
 			"A moderator command to start a round of science bowl."
+		)
+		.addStringOption((o) => 
+			o
+				.setName("team_a")
+				.setDescription("The school title for Team A")
+				.setRequired(true)
+		)
+		.addStringOption((o) => 
+			o
+				.setName("team_b")
+				.setDescription("The school title for Team B")
+				.setRequired(true)
 		),
 	permission: "mod",
 	async execute(interaction) {
@@ -19,6 +32,8 @@ module.exports = {
 		}
         
 		interaction.editReply("Let's start bowling! First, let's figure out the teams");
+		const teamATitle = interaction.options.getString("team_a") ?? "Team A";
+		const teamBTitle = interaction.options.getString("team_b") ?? "Team B";
 
 		const buttonA = new MessageButton()
 			.setLabel("Team A")
@@ -43,17 +58,17 @@ module.exports = {
 		const row = new MessageActionRow()
 			.addComponents([buttonA, buttonB, buttonCancel, buttonComplete]);
         
-		let teamA = [];
-		let teamB = [];
+		let teamA = new Collection();
+		let teamB = new Collection();
         
 		const embed = new MessageEmbed()
 			.setColor("#42f5aa")
 			.setTitle("🧪 **|** Let's start bowling!")
 			.setDescription("Press one of the buttons below to set your team.")
-			.addField(":regional_indicator_a: Team A", (teamA.length > 0) ? teamA.toString() : "No players", true)
-			.addField(":regional_indicator_b: Team B", (teamB.length > 0) ? teamB.toString() : "No players", true);
+			.addField(`:regional_indicator_a: ${teamATitle}`, "No players", true)
+			.addField(`:regional_indicator_b: ${teamBTitle}`, "No players", true);
         
-		interaction.channel.send({ embeds: [embed], components: [row]});
+		const joinMessage = await interaction.channel.send({ embeds: [embed], components: [row]});
 
 		const filter = i => (i.customId === "addTeamA" || i.customId === "addTeamB" || i.customId === "cancel" || i.customId === "complete");
 		const buttonCollector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 });
@@ -61,18 +76,20 @@ module.exports = {
 		buttonCollector.on("collect", async i => {
 
 			if (i.customId === "addTeamA") {
-				if(teamA.includes(i.user)) return i.reply({ content: "You are already in this team!", ephemeral: true });
-				teamA.push(i.user);
+				if(teamA.has(i.user.id)) teamA.delete(i.user.id);
+				teamA = teamA.set(i.user.id, i.user);
 
-				teamB = removePlayer(teamB, i.user);
+				teamB.delete(i.user.id);
 
+				const teamADisplay = displayTeam(teamA);
+				const teamBDisplay = displayTeam(teamB);
 				embed.spliceFields(0, 2, {
-					name: ":regional_indicator_a: Team A",
-					value: (teamA.length > 0) ? teamA.toString() : "No players",
+					name: `:regional_indicator_a: ${teamATitle}`,
+					value: teamADisplay,
 					inline: true
 				}, {
-					name: ":regional_indicator_b: Team B",
-					value: (teamB.length > 0) ? teamB.toString() : "No players",
+					name: `:regional_indicator_b: ${teamBTitle}`,
+					value: teamBDisplay,
 					inline: true
 				});
 				await i.message.edit({ embeds: [embed], components: [row]});
@@ -80,18 +97,20 @@ module.exports = {
 			}
 
 			if (i.customId === "addTeamB") {
-				if(includesPlayer(teamB, i.user)) return i.reply({ content: "You are already in this team!", ephemeral: true });
-				teamB.push(i.user);
+				if(teamB.has(i.user.id)) teamB.delete(i.user.id);
+				teamB.set(i.user.id, i.user);
 
-				teamA = removePlayer(teamA, i.user);
+				teamA.delete(i.user.id);
 
+				const teamADisplay = displayTeam(teamA);
+				const teamBDisplay = displayTeam(teamB);
 				embed.spliceFields(0, 2, {
-					name: ":regional_indicator_a: Team A",
-					value: (teamA.length > 0) ? teamA.toString() : "No players",
+					name: `:regional_indicator_a: ${teamATitle}`,
+					value: teamADisplay,
 					inline: true
 				}, {
-					name: ":regional_indicator_b: Team B",
-					value: (teamB.length > 0) ? teamB.toString() : "No players",
+					name: `:regional_indicator_b: ${teamBTitle}`,
+					value: teamBDisplay,
 					inline: true
 				});
 				await i.message.edit({ embeds: [embed], components: [row]});
@@ -107,7 +126,7 @@ module.exports = {
 
 			if (i.customId === "complete") {
 				if(!i.member.roles.cache.has(moderators) && !i.member.roles.cache.has(admins) && i.user.id != interaction.user.id) return i.reply({ content: "You do not have permission to do this!", ephemeral: true });
-				if (teamA.length === 0 || teamB.length === 0) {
+				if (teamA.size === 0 || teamB.size === 0) {
 					i.reply({ content: "You need to have at least one player in each team!", ephemeral: true });
 					return;
 				}
@@ -115,11 +134,14 @@ module.exports = {
 				const game = new BowlGame({
 					channelId: interaction.channel.id,
 					creatorId: interaction.user.id,
-					teamA: teamA,
-					teamB: teamB,
+					teamATitle: teamATitle,
+					teamA: Array.from(teamA.keys()),
+					teamBTitle: teamBTitle,
+					teamB: Array.from(teamB.keys()),
 					teamAScore: 0,
 					teamBScore: 0,
-					round: 1,
+					round: 0,
+					threads: [],
 					bonus: ""
 				});
 
@@ -130,30 +152,19 @@ module.exports = {
 				buttonB.setDisabled();
 				buttonCancel.setDisabled();
 				buttonComplete.setDisabled();
-                
+				row.setComponents([buttonA, buttonB, buttonCancel, buttonComplete]);
+
 				i.reply({ content: "Game has started!", ephemeral: true });
 				return await i.message.edit({ embeds: [embed], components: [row] });
 			}
 		});
+		buttonCollector.on("end", async () => {
+			buttonA.setDisabled();
+			buttonB.setDisabled();
+			buttonCancel.setDisabled();
+			buttonComplete.setDisabled();
+			row.setComponents([buttonA, buttonB, buttonCancel, buttonComplete]);
+			return await joinMessage.edit({ embeds: [embed], components: [row] });
+		});
 	},
 };
-
-function removePlayer(arr, value) {
-	for (let i = 0; i < arr.length; i++){
-		if (arr[i].id === value.id) {
-			arr.splice(i, 1);
-			break;
-		}
-	}
-	return arr;
-}
-
-function includesPlayer(arr, value) {
-	// check if there is an item in the array with the same id as the id of the value
-	for (let i = 0; i < arr.length; i++) {
-		if (arr[i].id === value.id) {
-			return true;
-		}
-	}
-	return false;
-}

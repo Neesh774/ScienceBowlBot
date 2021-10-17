@@ -1,5 +1,5 @@
 const { Collection } = require("discord.js");
-
+const button = require("./button.js");
 const cooldowns = new Collection();
 
 module.exports = {
@@ -8,7 +8,8 @@ module.exports = {
 	async execute(interaction, client) {
 		const { commandName, user, member } = interaction;
 
-		if (!interaction.isCommand() && !interaction.isContextMenu()) return;
+		if (!interaction.isCommand() && !interaction.isButton()) return;
+		if (interaction.isButton()) button.execute(interaction, client);
 
 		const command = client.commands.get(commandName);
 		if (!command) return;
@@ -59,14 +60,14 @@ module.exports = {
 		}
 
 		try {
-			await interaction.deferReply();
+			await interaction.deferReply({ ephemeral: true});
 			await command.execute(interaction);
 		} catch (error) {
 			console.error(`Failed to execute command ${commandName}
-            * ${error}`);
-			interaction.reply({
+            * ${error.stack}`);
+			interaction.editReply({
 				content:
-					"❌ **|** Something went wrong while executing that command.`!",
+					"❌ **|** Something went wrong while executing that command!",
 				ephemeral: true,
 			});
 		}
