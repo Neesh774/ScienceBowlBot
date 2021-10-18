@@ -1,5 +1,6 @@
-const { MessageActionRow, MessageButton, MessageEmbed } = require("discord.js");
+const { MessageActionRow, MessageButton } = require("discord.js");
 const { moderators, admins } = require("../config.json");
+const { sendQuestionOptions } = require("./sendQuestionOptions");
 
 module.exports = {
     async tossup(interaction, game, attempt) {
@@ -27,34 +28,13 @@ module.exports = {
                     team === "A" ? game.teamAScore += 4 : game.teamBScore += 4;
                     game.bonus = team;
                     await game.save();
-                    const embed = new MessageEmbed()
-                        .setTitle(`Round ${game.round}`)
-                        .setDescription("Press one of the buttons below to proceed with the round and start their respective timers AFTER the question has been read.")
-                        .setColor("#42f5aa");
-                    
-                    const tossup = new MessageButton()
-                        .setLabel("Tossup")
-                        .setStyle("PRIMARY")
-                        .setCustomId("tossup");
-                    const bonus = new MessageButton()
-                        .setLabel("Bonus")
-                        .setStyle("PRIMARY")
-                        .setCustomId("bonus")
-                        .setDisabled(false);
-                    const cancel = new MessageButton()
-                        .setLabel("Cancel")
-                        .setStyle("DANGER")
-                        .setCustomId("deleteQuestion");
-                    
-                    const row = new MessageActionRow()
-                        .addComponents(tossup, bonus, cancel);
-                    await interaction.message.edit({ embeds: [embed], components: [row] });
 
                     interaction.channel.send(`4 points were awarded to Team ${team}. They now have **${team === "A" ? game.teamAScore : game.teamBScore}** points.`);
+                    await sendQuestionOptions(game, interaction.channel, interaction);
                 } else {
                     if(attempt === 2) {
-                        interaction.channel.send("The tossup was incorrect, this thread will be archived.");
-                        await interaction.channel.setArchived(true);
+                        interaction.channel.send({ content: "The tossup was incorrect, we will now move on to the next question." });
+                        sendQuestionOptions(game, interaction.channel, interaction);
                         return;
                     }
                     const interrupt = new MessageButton()
@@ -62,37 +42,49 @@ module.exports = {
                         .setStyle("DANGER")
                         .setCustomId("interrupt");
                     const archive = new MessageButton()
-                        .setLabel("Archive")
+                        .setLabel("Continue")
                         .setStyle("SUCCESS")
-                        .setCustomId("archive");
+                        .setCustomId("continue");
                     const row = new MessageActionRow()
                         .addComponents([interrupt, archive]);
                     
                     interaction.channel.send({ content: `${m.author.username} answered the tossup incorrectly. If it was an interrupt, press the interrupt button. If not, press the archive button and the thread will be archived.`, components: [row]});
                     const filter = i => (i.customId === "interrupt" || i.customId === "archive") && (i.member.roles.cache.has(moderators) || i.member.roles.cache.has(admins) || i.member.id === interaction.user.id);
-                    const buttonCollector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 });
+                    const buttonCollector = interaction.channel.createMessageComponentCollector({ filter, time: 5000 });
 
+                    let buttonCollected = false;
                     buttonCollector.on("collect", async i => {
+                        buttonCollected = true;
                         if(i.customId === "interrupt") {
                             team === "A" ? game.teamBScore += 4 : game.teamAScore += 4;
                             await game.save();
-                            i.reply({ content: `${team === "A" ? "B" : "A"} was given **4** points. They now have **${team === "A" ? game.teamBScore : game.teamAScore}** points`});
+                            return await i.reply({ content: `${team === "A" ? "B" : "A"} was given **4** points. They now have **${team === "A" ? game.teamBScore : game.teamAScore}** points`});
                         }
-                        else if(i.customId === "archive") {
-                            i.reply({ content: "Archiving the thread..", ephemeral: true});
-                            await interaction.channel.setArchived(true);
+                        else if(i.customId === "continue") {
+                            i.reply({ content: "Continuing to the next question", ephemeral: true});
+                            return await sendQuestionOptions(game, interaction.channel, interaction);
                         }
                     });
-                    interaction.channel.send(`The **7** second timer for ${team === "A"? "B" : "A"} has been started.`);
-                    attempt ++;
-                    this.tossup(interaction, game, attempt);
+                    buttonCollector.on("end", async () => {
+                        if (!buttonCollected) {
+                            interaction.channel.send(`The **7** second timer for team ${team === "A"? "B" : "A"} has been started.`);
+                            attempt ++;
+                            this.tossup(interaction, game, attempt);
+                        }
+                    });
+                    const message = await interaction.channel.send(`Team ${team === "A"? "B" : "A"}'s timer will start in 5 seconds.`);
+                    for(let i = 5; i > 0; i--) {
+                        await message.edit(`Team ${team === "A"? "B" : "A"}'s timer will start in ${i}`);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                    await message.delete();
                 }
             });
         });
         collector.on("end", async () => {
             if(!collected) {
-                await interaction.channel.send("There were no answers, this thread will be archived.");
-                await interaction.channel.setArchived(true);
+                await interaction.channel.send("There were no answers, we will now move on to the next question.");
+                sendQuestionOptions(game, interaction.channel, interaction);
             }
         });
     }

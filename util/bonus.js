@@ -1,6 +1,5 @@
-const { MessageActionRow, MessageButton } = require("discord.js");
-const { moderators, admins } = require("../config.json");
 
+const { sendQuestionOptions } = require("./sendQuestionOptions");
 module.exports = {
     async bonus(interaction, game) {
         const bonusFilter = (m) => {
@@ -28,34 +27,12 @@ module.exports = {
                     await game.save();
                     interaction.channel.send(`10 points were awarded to Team ${team}. They now have **${team === "A" ? game.teamAScore : game.teamBScore}** points.`);
                 } else {
-                    const interrupt = new MessageButton()
-                        .setLabel("Interrupt")
-                        .setStyle("DANGER")
-                        .setCustomId("interrupt");
-                    const archive = new MessageButton()
-                        .setLabel("Archive")
-                        .setStyle("SUCCESS")
-                        .setCustomId("archive");
-                    const row = new MessageActionRow()
-                        .addComponents([interrupt, archive]);
-                    
-                    interaction.channel.send({ content: `${m.author.username} answered the bonus incorrectly. If it was an interrupt, press the interrupt button. If not, press the archive button and the thread will be archived.`, components: [row]});
-                    const filter = i => (i.customId === "interrupt" || i.customId === "archive") && (i.member.roles.cache.has(moderators) || i.member.roles.cache.has(admins));
-                    const buttonCollector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 });
-
-                    buttonCollector.on("collect", async i => {
-                        if(i.customId === "interrupt") {
-                            team === "A" ? game.teamBScore += 4 : game.teamAScore += 4;
-                            await game.save();
-                            i.reply({ content: `${team === "A" ? "B" : "A"} was given **4** points. They now have **${team === "A" ? game.teamBScore : game.teamAScore}** points`});
-                        }
-                        else if(i.customId === "archive") {
-                            i.reply({ content: "Archiving the thread..", ephemeral: true});
-                            await interaction.channel.setArchived(true);
-                        }
-                    });
+                    game.bonus = "";
+                    await game.save();
+                    interaction.channel.send(`No points were awarded to Team ${team}. They now have **${team === "A" ? game.teamAScore : game.teamBScore}** points.`);
                 }
             });
+            await sendQuestionOptions(game, interaction.channel, interaction);
         });
     }
 };

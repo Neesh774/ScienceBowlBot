@@ -2,6 +2,7 @@ const { SlashCommandBuilder } = require("@discordjs/builders");
 const { MessageEmbed } = require("discord.js");
 const BowlGame = require("../schemas/BowlGame");
 const { endDisplayTeam } = require("../util/displayTeam");
+const config = require("../config.json");
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -21,17 +22,16 @@ module.exports = {
 		let winner = game.teamAScore > game.teamBScore ? "Team A" : "Team B";
 		if(game.teamAScore === game.teamBScore) winner = "Tie";
 
-		console.log(game.teamA);
-		console.log(game.teamB);
 		const embed = new MessageEmbed()
-			.setColor("#42f5aa")
+			.setColor(config.embedColor)
 			.setTitle("Game Ended")
 			.setDescription(`The game has ended. ${winner === "Tie" ? `There was a tie, and both teams had a score of ${game.teamAScore}` : `The winner was ${winner} with a score of ${game.teamAScore}`}`)
 			.addField(`:regional_indicator_a:: ${game.teamAScore}`, endDisplayTeam(game.teamA, interaction.guild), true)
 			.addField(`:regional_indicator_b:: ${game.teamBScore}`, endDisplayTeam(game.teamB, interaction.guild), true)
 			.setFooter(`Ended on round ${game.round}`);
 
-		game.threads.forEach(async threadId => {
+		game.threads.forEach(async threadObj => {
+			const threadId = threadObj.threadId;
 			const thread = await interaction.channel.threads.fetch(threadId).catch(() => {null;});
 			thread.setArchived(true).catch(() => {null;});
 		});

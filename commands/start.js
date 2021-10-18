@@ -3,6 +3,8 @@ const { MessageEmbed, MessageActionRow, MessageButton, Collection } = require("d
 const BowlGame = require("../schemas/BowlGame");
 const { moderators, admins } = require("../config.json");
 const { displayTeam } = require("../util/displayTeam");
+const config = require("../config.json");
+
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName("start")
@@ -62,7 +64,7 @@ module.exports = {
 		let teamB = new Collection();
         
 		const embed = new MessageEmbed()
-			.setColor("#42f5aa")
+			.setColor(config.embedColor)
 			.setTitle("🧪 **|** Let's start bowling!")
 			.setDescription("Press one of the buttons below to set your team.")
 			.addField(`:regional_indicator_a: ${teamATitle}`, "No players", true)
