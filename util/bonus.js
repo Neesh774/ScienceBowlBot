@@ -13,7 +13,7 @@ module.exports = {
             clearTimeout(reminder);
             await m.react("✅");
             await m.react("❌");
-            await interaction.channel.send(`${m.author.username} from ${team} answered the bonus first. Moderator, please indicate whether or not the answer was correct.`);
+            await interaction.channel.send(`${m.author.username} from Team ${team} answered the bonus first. Moderator, please indicate whether or not the answer was correct.`);
             
             const filter = (reaction, user) => {
                 return (reaction.emoji.name === "✅" || reaction.emoji.name === "❌") && user.id === interaction.user.id;
@@ -26,13 +26,14 @@ module.exports = {
                     game.bonus = "";
                     await game.save();
                     interaction.channel.send(`10 points were awarded to Team ${team}. They now have **${team === "A" ? game.teamAScore : game.teamBScore}** points.`);
+                    await sendQuestionOptions(game, interaction.channel, interaction);
                 } else {
                     game.bonus = "";
                     await game.save();
                     interaction.channel.send(`No points were awarded to Team ${team}. They now have **${team === "A" ? game.teamAScore : game.teamBScore}** points.`);
+                    await sendQuestionOptions(game, interaction.channel, interaction);
                 }
             });
-            await sendQuestionOptions(game, interaction.channel, interaction);
         });
     }
 };

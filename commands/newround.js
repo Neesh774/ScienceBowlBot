@@ -18,6 +18,7 @@ module.exports = {
 		}
 		
         game.round ++;
+		game.question = 0;
 		await game.save();
 
 		const thread = await interaction.channel.threads.create({

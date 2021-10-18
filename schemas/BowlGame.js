@@ -12,6 +12,7 @@ const BowlGame = new Schema({
 	teamAScore: Number,
 	teamBScore: Number,
 	round: Number,
+	question: Number,
 	threads: [{
 		threadId: String,
 		message: String,

@@ -23,6 +23,7 @@ module.exports = {
             if (interaction.customId == "tossup") {
                 await interaction.reply({ content: "Started tossup", ephemeral: true});
                 await interaction.channel.send("Started the **7** second timer for a tossup!");
+                game.question ++;
                 await tossup.tossup(interaction, game, 1);
             }
             else if (interaction.customId == "bonus") {

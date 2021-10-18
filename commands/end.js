@@ -26,8 +26,8 @@ module.exports = {
 			.setColor(config.embedColor)
 			.setTitle("Game Ended")
 			.setDescription(`The game has ended. ${winner === "Tie" ? `There was a tie, and both teams had a score of ${game.teamAScore}` : `The winner was ${winner} with a score of ${game.teamAScore}`}`)
-			.addField(`:regional_indicator_a:: ${game.teamAScore}`, endDisplayTeam(game.teamA, interaction.guild), true)
-			.addField(`:regional_indicator_b:: ${game.teamBScore}`, endDisplayTeam(game.teamB, interaction.guild), true)
+			.addField(`:regional_indicator_a: ${game.teamATitle}: ${game.teamAScore}`, endDisplayTeam(game.teamA, interaction.guild), true)
+			.addField(`:regional_indicator_b: ${game.teamBTitle}: ${game.teamBScore}`, endDisplayTeam(game.teamB, interaction.guild), true)
 			.setFooter(`Ended on round ${game.round}`);
 
 		game.threads.forEach(async threadObj => {

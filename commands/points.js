@@ -120,5 +120,19 @@ module.exports = {
                 i.reply({ content: "✅ **|** Points updated.", ephemeral: true });
             }
         });
+
+        buttonCollector.on("end", async () => {
+            AMinusTen.setDisabled(true);
+            AMinusFour.setDisabled(true);
+            TeamA.setDisabled(true);
+            APlusFour.setDisabled(true);
+            APlusTen.setDisabled(true);
+            BMinusTen.setDisabled(true);
+            BMinusFour.setDisabled(true);
+            TeamB.setDisabled(true);
+            BPlusFour.setDisabled(true);
+            BPlusTen.setDisabled(true);
+            message.edit({ embeds: [embed], components: [rowA, rowB] });
+        });
     }
 };
