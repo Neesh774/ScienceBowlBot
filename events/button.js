@@ -36,7 +36,7 @@ module.exports = {
                 game.round --;
                 game.bonus = "";
                 if(game.threads.includes(threadId)) game.threads.splice(game.threads.indexOf(threadId), 1);
-                await interaction.reply("Successfully cancelled the question!");
+                await interaction.reply("Successfully cancelled the round!");
                 await interaction.channel.setArchived(true);
                 await game.save();
             }

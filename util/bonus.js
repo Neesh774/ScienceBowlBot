@@ -23,17 +23,17 @@ module.exports = {
             collector.on("collect", async r => {
                 if (r.emoji.name === "✅") {
                     team === "A" ? game.teamAScore += 10 : game.teamBScore += 10;
-                    game.bonus = "";
                     await game.save();
                     interaction.channel.send(`10 points were awarded to Team ${team}. They now have **${team === "A" ? game.teamAScore : game.teamBScore}** points.`);
                     await sendQuestionOptions(game, interaction.channel, interaction);
                 } else {
-                    game.bonus = "";
                     await game.save();
                     interaction.channel.send(`No points were awarded to Team ${team}. They now have **${team === "A" ? game.teamAScore : game.teamBScore}** points.`);
                     await sendQuestionOptions(game, interaction.channel, interaction);
                 }
             });
         });
+        game.bonus = "";
+        await game.save();
     }
 };

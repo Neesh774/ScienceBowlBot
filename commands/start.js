@@ -156,7 +156,7 @@ module.exports = {
 				buttonComplete.setDisabled();
 				row.setComponents([buttonA, buttonB, buttonCancel, buttonComplete]);
 
-				i.reply({ content: "Game has started!", ephemeral: true });
+				i.reply({ content: "Game has started! Use /newround to start a new round.", ephemeral: true });
 				return await i.message.edit({ embeds: [embed], components: [row] });
 			}
 		});

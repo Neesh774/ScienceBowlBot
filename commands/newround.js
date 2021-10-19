@@ -26,9 +26,17 @@ module.exports = {
 			autoArchiveDuration: 60,
 			reason: `New question created by ${interaction.user.tag}`
 		});
-
-        const message = await sendQuestionOptions(game, thread, interaction);
+		const message = await sendQuestionOptions(game, thread, interaction);
 		await message.pin();
+
+		await game.teamA.forEach(async memberId => {
+			const member = await interaction.guild.members.fetch(memberId);
+			await thread.members.add(member, "Team A");
+		});
+		await game.teamB.forEach(async memberId => {
+			const member = await interaction.guild.members.fetch(memberId);
+			await thread.members.add(member, "Team B");
+		});
         interaction.editReply({ content: `Created your thread at ${thread.toString()}!`, ephemeral: true });
         game.threads.push({ threadId: thread.id, message: message.id });
         await game.save();

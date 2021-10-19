@@ -72,7 +72,7 @@ module.exports = {
             .setCustomId("b+10");
         const rowB = new MessageActionRow()
             .setComponents(BMinusTen, BMinusFour, TeamB, BPlusFour, BPlusTen);
-
+        await interaction.editReply("✅ **|** Sent point updater.");
         const message = await interaction.channel.send({ embeds: [embed], components: [rowA, rowB], ephemeral: false });
         const filter = i => {
             const validButton = (i.customId.startsWith("a+") || i.customId.startsWith("b+") || i.customId.startsWith("a-") || i.customId.startsWith("b-") || i.customId.startsWith("team"));
@@ -132,7 +132,9 @@ module.exports = {
             TeamB.setDisabled(true);
             BPlusFour.setDisabled(true);
             BPlusTen.setDisabled(true);
-            message.edit({ embeds: [embed], components: [rowA, rowB] });
+            rowA.setComponents(AMinusTen, AMinusFour, TeamA, APlusFour, APlusTen);
+            rowB.setComponents(BMinusTen, BMinusFour, TeamB, BPlusFour, BPlusTen);
+            await message.edit({ embeds: [embed], components: [rowA, rowB] });
         });
     }
 };

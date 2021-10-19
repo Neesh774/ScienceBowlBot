@@ -41,14 +41,14 @@ module.exports = {
                         .setLabel("Interrupt")
                         .setStyle("DANGER")
                         .setCustomId("interrupt");
-                    const archive = new MessageButton()
+                    const continueRound = new MessageButton()
                         .setLabel("Continue")
                         .setStyle("SUCCESS")
                         .setCustomId("continue");
                     const row = new MessageActionRow()
-                        .addComponents([interrupt, archive]);
+                        .addComponents([interrupt, continueRound]);
                     
-                    interaction.channel.send({ content: `${m.author.username} answered the tossup incorrectly. If it was an interrupt, press the interrupt button. If not, press the archive button and the thread will be archived.`, components: [row]});
+                    const incorrectTossup = interaction.channel.send({ content: `${m.author.username} answered the tossup incorrectly. If it was an interrupt, press the interrupt button. If not, press the continue button and we will proceed to the next question. Do nothing to allow the other team to answer.`, components: [row]});
                     const filter = i => (i.customId === "interrupt" || i.customId === "continue") && (i.member.roles.cache.has(moderators) || i.member.roles.cache.has(admins) || i.member.id === interaction.user.id);
                     const buttonCollector = interaction.channel.createMessageComponentCollector({ filter, time: 5000 });
 
@@ -71,6 +71,10 @@ module.exports = {
                             attempt ++;
                             this.tossup(interaction, game, attempt);
                         }
+                        interrupt.setDisabled(true);
+                        continueRound.setDisabled(true);
+                        row.setComponents([interrupt, continueRound]);
+                        incorrectTossup.edit({ content: `${m.author.username} answered the tossup incorrectly. If it was an interrupt, press the interrupt button. If not, press the continue button and we will proceed to the next question. Do nothing to allow the other team to answer.`, components: [row]});
                     });
                     const message = await interaction.channel.send(`Team ${team === "A"? "B" : "A"}'s timer will start in 5 seconds.`);
                     for(let i = 5; i > 0; i--) {
